@@ -36,6 +36,7 @@ from oauth2client import GOOGLE_TOKEN_URI
 from oauth2client import util
 from oauth2client.anyjson import simplejson
 from oauth2client import clientsecrets
+from oauth2client.util import determine_character_encoding
 
 HAS_OPENSSL = False
 HAS_CRYPTO = False
@@ -706,6 +707,8 @@ class OAuth2Credentials(Credentials):
     logger.info('Refreshing access_token')
     resp, content = http_request(
         self.token_uri, method='POST', body=body, headers=headers)
+    encoding = determine_character_encoding(resp)
+    content = content.decode(encoding)
     if resp.status == 200:
       # TODO(jcgregorio) Raise an error if loads fails?
       d = simplejson.loads(content)
@@ -763,6 +766,8 @@ class OAuth2Credentials(Credentials):
     if resp.status == 200:
       self.invalid = True
     else:
+      encoding = determine_character_encoding(resp)
+      content = content.decode(encoding)
       error_msg = 'Invalid response %s.' % resp.status
       try:
         d = simplejson.loads(content)
@@ -1330,6 +1335,8 @@ if HAS_CRYPTO:
     resp, content = http.request(cert_uri)
 
     if resp.status == 200:
+      encoding = determine_character_encoding(resp)
+      content = content.decode(encoding)
       certs = simplejson.loads(content)
       return crypt.verify_signed_jwt_with_certs(id_token, certs, audience)
     else:
@@ -1603,6 +1610,8 @@ class OAuth2WebServerFlow(Flow):
 
     resp, content = http.request(self.token_uri, method='POST', body=body,
                                  headers=headers)
+    encoding = determine_character_encoding(resp)
+    content = content.decode(encoding)
     d = _parse_exchange_token_response(content)
     if resp.status == 200 and 'access_token' in d:
       access_token = d['access_token']
