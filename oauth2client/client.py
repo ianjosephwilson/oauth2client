@@ -20,7 +20,6 @@ Tools for interacting with OAuth 2.0 protected resources.
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 import base64
-from . import clientsecrets
 import copy
 import datetime
 import httplib2
@@ -36,6 +35,7 @@ from oauth2client import GOOGLE_REVOKE_URI
 from oauth2client import GOOGLE_TOKEN_URI
 from oauth2client import util
 from oauth2client.anyjson import simplejson
+from oauth2client import clientsecrets
 
 HAS_OPENSSL = False
 HAS_CRYPTO = False
