@@ -64,7 +64,7 @@ class _ServiceAccountCredentials(AssertionCredentials):
         'kid': self._private_key_id
     }
 
-    now = long(time.time())
+    now = int(time.time())
     payload = {
         'aud': self._token_uri,
         'scope': self._scopes,

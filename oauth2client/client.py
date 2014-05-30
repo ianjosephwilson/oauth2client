@@ -20,7 +20,7 @@ Tools for interacting with OAuth 2.0 protected resources.
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 import base64
-import clientsecrets
+from . import clientsecrets
 import copy
 import datetime
 import httplib2
@@ -28,8 +28,8 @@ import logging
 import os
 import sys
 import time
-import urllib
-import urlparse
+import urllib.request, urllib.parse, urllib.error
+import urllib.parse
 
 from oauth2client import GOOGLE_AUTH_URI
 from oauth2client import GOOGLE_REVOKE_URI
@@ -48,7 +48,7 @@ except ImportError:
   pass
 
 try:
-  from urlparse import parse_qsl
+  from urllib.parse import parse_qsl
 except ImportError:
   from cgi import parse_qsl
 
@@ -369,7 +369,7 @@ def clean_headers(headers):
   """
   clean = {}
   try:
-    for k, v in headers.iteritems():
+    for k, v in headers.items():
       clean[str(k)] = str(v)
   except UnicodeEncodeError:
     raise NonAsciiHeaderError(k + ': ' + v)
@@ -386,11 +386,11 @@ def _update_query_params(uri, params):
   Returns:
     The same URI but with the new query parameters added.
   """
-  parts = list(urlparse.urlparse(uri))
+  parts = list(urllib.parse.urlparse(uri))
   query_params = dict(parse_qsl(parts[4]))  # 4 is the index of the query part
   query_params.update(params)
-  parts[4] = urllib.urlencode(query_params)
-  return urlparse.urlunparse(parts)
+  parts[4] = urllib.parse.urlencode(query_params)
+  return urllib.parse.urlunparse(parts)
 
 
 class OAuth2Credentials(Credentials):
@@ -642,7 +642,7 @@ class OAuth2Credentials(Credentials):
 
   def _generate_refresh_request_body(self):
     """Generate the body that will be used in the refresh request."""
-    body = urllib.urlencode({
+    body = urllib.parse.urlencode({
         'grant_type': 'refresh_token',
         'client_id': self.client_id,
         'client_secret': self.client_secret,
@@ -731,7 +731,7 @@ class OAuth2Credentials(Credentials):
           self.invalid = True
           if self.store:
             self.store.locked_put(self)
-      except StandardError:
+      except Exception:
         pass
       raise AccessTokenRefreshError(error_msg)
 
@@ -768,7 +768,7 @@ class OAuth2Credentials(Credentials):
         d = simplejson.loads(content)
         if 'error' in d:
           error_msg = d['error']
-      except StandardError:
+      except Exception:
         pass
       raise TokenRevokeError(error_msg)
 
@@ -863,16 +863,16 @@ def _get_environment(urllib2_urlopen=None):
   elif server_software.startswith('Development/'):
     _env_name = 'GAE_LOCAL'
   else:
-    import urllib2
+    import urllib.request, urllib.error, urllib.parse
     try:
       if urllib2_urlopen is None:
-        urllib2_urlopen = urllib2.urlopen
+        urllib2_urlopen = urllib.request.urlopen
       response = urllib2_urlopen('http://metadata.google.internal')
       if any('Metadata-Flavor: Google' in h for h in response.info().headers):
         _env_name = 'GCE_PRODUCTION'
       else:
         _env_name = 'UNKNOWN'
-    except urllib2.URLError:
+    except urllib.error.URLError:
       _env_name = 'UNKNOWN'
 
   return _env_name
@@ -1077,7 +1077,7 @@ def _get_well_known_file():
 def _get_default_credential_from_file(default_credential_filename):
   """Build the Default Credentials from file."""
 
-  import service_account
+  from . import service_account
 
   # read the credentials from the file
   with open(default_credential_filename) as default_credential:
@@ -1094,7 +1094,7 @@ def _get_default_credential_from_file(default_credential_filename):
                                   "(and have one of the '" + AUTHORIZED_USER +
                                   "' or '" + SERVICE_ACCOUNT + "' values)")
 
-  missing_fields = required_fields.difference(client_credentials.keys())
+  missing_fields = required_fields.difference(list(client_credentials.keys()))
   
   if missing_fields:
     _raise_exception_for_missing_fields(missing_fields)
@@ -1182,7 +1182,7 @@ class AssertionCredentials(GoogleCredentials):
   def _generate_refresh_request_body(self):
     assertion = self._generate_assertion()
 
-    body = urllib.urlencode({
+    body = urllib.parse.urlencode({
         'assertion': assertion,
         'grant_type': 'urn:ietf:params:oauth:grant-type:jwt-bearer',
         })
@@ -1283,7 +1283,7 @@ if HAS_CRYPTO:
 
     def _generate_assertion(self):
       """Generate the assertion that will be used in the request."""
-      now = long(time.time())
+      now = int(time.time())
       payload = {
           'aud': self.token_uri,
           'scope': self.scope,
@@ -1379,7 +1379,7 @@ def _parse_exchange_token_response(content):
   resp = {}
   try:
     resp = simplejson.loads(content)
-  except StandardError:
+  except Exception:
     # different JSON libs raise different exceptions,
     # so we just do a catch-all here
     resp = dict(parse_qsl(content))
@@ -1573,7 +1573,7 @@ class OAuth2WebServerFlow(Flow):
       refresh_token.
     """
 
-    if not (isinstance(code, str) or isinstance(code, unicode)):
+    if not (isinstance(code, str) or isinstance(code, str)):
       if 'code' not in code:
         if 'error' in code:
           error_msg = code['error']
@@ -1583,7 +1583,7 @@ class OAuth2WebServerFlow(Flow):
       else:
         code = code['code']
 
-    body = urllib.urlencode({
+    body = urllib.parse.urlencode({
         'grant_type': 'authorization_code',
         'client_id': self.client_id,
         'client_secret': self.client_secret,
@@ -1626,7 +1626,7 @@ class OAuth2WebServerFlow(Flow):
       logger.info('Failed to retrieve access token: %s' % content)
       if 'error' in d:
         # you never know what those providers got to say
-        error_msg = unicode(d['error'])
+        error_msg = str(d['error'])
       else:
         error_msg = 'Invalid response: %s.' % str(resp.status)
       raise FlowExchangeError(error_msg)
