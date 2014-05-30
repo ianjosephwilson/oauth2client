@@ -1339,8 +1339,8 @@ if HAS_CRYPTO:
 def _urlsafe_b64decode(b64string):
   # Guard against unicode strings, which base64 can't handle.
   b64string = b64string.encode('ascii')
-  padded = b64string + '=' * (4 - len(b64string) % 4)
-  return base64.urlsafe_b64decode(padded)
+  padded = b64string + b'=' * (4 - len(b64string) % 4)
+  return base64.urlsafe_b64decode(padded).decode('ascii')
 
 
 def _extract_id_token(id_token):
