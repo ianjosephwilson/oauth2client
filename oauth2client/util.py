@@ -194,3 +194,41 @@ def _add_query_parameter(url, name, value):
     q[name] = value
     parsed[4] = urllib.parse.urlencode(q)
     return urllib.parse.urlunparse(parsed)
+
+
+def parse_content_type(content_type):
+  """
+  Parse a content type into its main type, sub type and parameters.
+
+  The main type, sub type and parameter keys are all converted to lower case.
+
+  @SEE http://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.7
+  """
+  parts = content_type.split('/', 1)
+  main_type = parts[0]
+  sub_type = None
+  params = {}
+  if len(parts) > 1:
+    sub_parts = parts[1].split(';')
+    sub_type = sub_parts[0].lower()
+    if len(sub_parts) > 1:
+      for param in sub_parts[1:]:
+        param_parts = param.split('=')
+        if len(param_parts) > 1:
+          param_value = param_parts[1]
+        else:
+          param_value = None
+        params[param_parts[0].lower()] = param_value
+  return main_type, sub_type, params
+
+
+def determine_character_encoding(resp_headers):
+  """
+  Use the response headers to determine the character encoding if one exists.
+  """
+  content_type = resp_headers.get('content-type', None)
+  charset = None
+  if content_type:
+    main_type, sub_type, params = parse_content_type(content_type)
+    charset = params.get('charset', 'utf-8')
+  return charset
